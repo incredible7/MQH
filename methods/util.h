@@ -11,6 +11,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <list>
+#include <random>
 
 #include <omp.h>
 #include <unistd.h>
@@ -295,6 +297,109 @@ void calc_centroid(                 // calc centroid
     for (int i = 0; i < d; ++i) centroid[i] /= (float) n;
 }
 
+// -----------------------------------------------------------------------------
+template<class DType>
+void select_sample(
+    int n,
+    int d,
+    int sample_size 
+    const std::vector<DType> &data,
+    std::vector<DType> &sample) 
+{
+    int divisor = n/sample_size;
+    for(int i = 0; i < sample_size; i++) {
+        for(int j = 0; j < d; j++) {
+            sample[i*d+j] = data[i*divisor*d+j];
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// assign the points to the nearest centroid
+template<class DType>
+void assign_points(
+    int n,                                              // number of data points
+    int n_centroids,                                    // number of centroids
+    int d,                                              // dimensions
+    const std::vector<DType> &data,                     // data points
+    std::vector<DType > &centroids,                     // centroids
+    std::vector<std::vector<int>> &assignments)           // assignments (return). Vector of lists with 
+{
+    for(int i = 0; i < n; i++) {
+        float min_distance = MAXFLOAT;
+        int min_index = 0;
+        for(int j = 0; j < n_centroids; j++) {
+            float distance = 0;
+            for (int l = 0; l < d; l++){
+                distance += (data[i*d+l] - centroids[j*d+l]) * (data[i*d+l] - centroids[j*d+l]);
+            }
+            if(distance < min_distance) {
+                min_distance = distance;
+                min_index = j;
+            }
+        }
+        assignments[min_index].push_back(i);
+    }
+}
+// -----------------------------------------------------------------------------
+
+template<class DType>
+int randInt(int min, int max,int seed) {
+    std::mt19937 gen(seed);
+    std::uniform_int_distribution<> dis(min, max);
+    return dis(gen);
+}
+// -----------------------------------------------------------------------------
+
+template<class DType>
+void initialize_random_centroids(
+    int n,                                              // number of data points
+    int k,                                              // number of centroids
+    int d,                                              // dimensions
+    const std::vector<DType> &data,                     // data points
+    std::vector<DType > &centroids)                     // centroids (return)
+{
+    int seed = 1;
+    for (int i = 0; i < k; i++) {
+        int index = randInt(0, n-1, seed);
+        for (int j = 0; j < d; j++) {
+            centroids[i*d+j] = data[index*d+j];
+        }
+        seed++;
+    }
+}
+
+template<class DType>
+void update_centroids(                                      
+    int n_centroids,                                    // number of centroids
+    int d,                                              // dimensions
+    const std::vector<DType> &data,                     // data points
+    std::vector<DType> &centroids,                      // centroids
+    std::vector<std::vector<int>> &assignments)         // assignments
+{
+    for(int i = 0; i < n_centroids; i++)
+    {
+        for(int j = 0; j < d; j++)
+        {
+            centroids[i*d+j] = 0.0f;
+        }
+        
+        std::vector<int> &index_vector = assignments[i];
+        int size = index_vector.size();
+
+        for(int index : index_vector)
+        {
+            for(int j = 0; j < d; j++)
+            {
+                centroids[i*d+j] += data[index*d+j];
+            }
+        }
+        for(int j = 0; j < d; k++)
+        {
+            centroids[i*d+j] /= size;
+        }
+    }
+}
 
 // -----------------------------------------------------------------------------
 template<class DType>
