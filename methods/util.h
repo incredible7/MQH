@@ -302,7 +302,7 @@ template<class DType>
 void select_sample(
     int n,
     int d,
-    int sample_size 
+    int sample_size, 
     const std::vector<DType> &data,
     std::vector<DType> &sample) 
 {
@@ -323,8 +323,12 @@ void assign_points(
     int d,                                              // dimensions
     const std::vector<DType> &data,                     // data points
     std::vector<DType > &centroids,                     // centroids
-    std::vector<std::vector<int>> &assignments)           // assignments (return). Vector of lists with 
+    std::vector<std::vector<int>> &assignments)           // assignments (return). Vector of vectors
 {
+    for(auto &cluster : assignments)
+    {
+        cluster.clear();
+    }
     for(int i = 0; i < n; i++) {
         float min_distance = MAXFLOAT;
         int min_index = 0;
