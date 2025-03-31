@@ -303,7 +303,7 @@ void select_sample(
     int n,
     int d,
     int sample_size, 
-    const std::vector<DType> &data,
+    const DType *data,
     std::vector<DType> &sample) 
 {
     int divisor = n/sample_size;
@@ -319,9 +319,9 @@ void select_sample(
 template<class DType>
 void assign_points(
     int n,                                              // number of data points
-    int n_centroids,                                    // number of centroids
+    int k,                                              // number of centroids
     int d,                                              // dimensions
-    const std::vector<DType> &data,                     // data points
+    const DType *data,                                  // raw pointer to data points
     std::vector<DType > &centroids,                     // centroids
     std::vector<std::vector<int>> &assignments)           // assignments (return). Vector of vectors
 {
@@ -332,7 +332,7 @@ void assign_points(
     for(int i = 0; i < n; i++) {
         float min_distance = MAXFLOAT;
         int min_index = 0;
-        for(int j = 0; j < n_centroids; j++) {
+        for(int j = 0; j < k; j++) {
             float distance = 0;
             for (int l = 0; l < d; l++){
                 distance += (data[i*d+l] - centroids[j*d+l]) * (data[i*d+l] - centroids[j*d+l]);
@@ -347,7 +347,6 @@ void assign_points(
 }
 // -----------------------------------------------------------------------------
 
-template<class DType>
 int randInt(int min, int max,int seed) {
     std::mt19937 gen(seed);
     std::uniform_int_distribution<> dis(min, max);
@@ -360,7 +359,7 @@ void initialize_random_centroids(
     int n,                                              // number of data points
     int k,                                              // number of centroids
     int d,                                              // dimensions
-    const std::vector<DType> &data,                     // data points
+    const DType *data,                                  // raw pointer to data points
     std::vector<DType > &centroids)                     // centroids (return)
 {
     int seed = 1;
@@ -375,32 +374,30 @@ void initialize_random_centroids(
 
 template<class DType>
 void update_centroids(                                      
-    int n_centroids,                                    // number of centroids
+    int k,                                              // number of centroids
     int d,                                              // dimensions
-    const std::vector<DType> &data,                     // data points
-    std::vector<DType> &centroids,                      // centroids
+    const DType *data,                                  // raw pointer to the data points
+    std::vector<DType> &centroids,                      // centroids. Contiguous vector of size k * d, where k is the number of centroids
     std::vector<std::vector<int>> &assignments)         // assignments
 {
-    for(int i = 0; i < n_centroids; i++)
+    for(int i = 0; i < k; i++)
     {
-        for(int j = 0; j < d; j++)
-        {
-            centroids[i*d+j] = 0.0f;
-        }
         
         std::vector<int> &index_vector = assignments[i];
         int size = index_vector.size();
-
-        for(int index : index_vector)
-        {
-            for(int j = 0; j < d; j++)
-            {
-                centroids[i*d+j] += data[index*d+j];
+        if(size > 0) {
+            for(int j = 0; j < d; j++) {
+                centroids[i*d+j] = 0.0f;
             }
-        }
-        for(int j = 0; j < d; k++)
-        {
-            centroids[i*d+j] /= size;
+            
+            for(int index : index_vector) {
+                for(int j = 0; j < d; j++){
+                    centroids[i*d+j] += data[index*d+j];
+                }
+            }
+            for(int j = 0; j < d; k++) {
+                centroids[i*d+j] /= size;
+            }
         }
     }
 }

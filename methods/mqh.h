@@ -13,23 +13,23 @@ public:
     int d_; // dimension of points
     int l_; // number of levels in the RVQ table
     const DType *data_; // pointer to data points
-    std::vector< // l_ * n_
-    std::vector<std::vector<std::vector<DType>>> residual_vectors; // l_ * n_ * d_ dimensional "vector" (tensor) storing residual vectors for the n_ points at each of the l levels
-    std::vector<std::vector<float>> residual_norms; // l_ * n_ dimensional vector storing the norms of the residual vectors
 
+    
+    std::vector<std::vector<std::vector<DType>>> centroids_; // tensor storing the final centroids at each level 
+    std::vector<std::vector<int>> residual_codewords_; // matrix storing the code words for the residual vectors for the n_ points at each of the l levels
+    std::vector<std::vector<float>> residual_norms_; // l_ * n_ dimensional vector storing the norms of the residual vectors
+    // 
 
     // -------------------------------------------------------------------------
     MQH(const DType *data, int n, int d, int number_of_subcodebooks);                         // constructor
     // -------------------------------------------------------------------------
     ~MQH();                                                        // destructor
     // -------------------------------------------------------------------------
-    void fit_dimensions(int number_of_subcodebooks);    // make d divide by number of sub-code books 
-    // -------------------------------------------------------------------------
     void build();                                    // build the datastructures
     // -------------------------------------------------------------------------
     void build_quantization_tables();           // build the quantization tables
     // -------------------------------------------------------------------------
-    void coarse_quantization(std::vector<float> &data, int n, int d); // coarse quantization
+    void coarse_quantization(const DType *data, int n, int d); // coarse quantization
     // -------------------------------------------------------------------------
     void build_hash_tables();                           // build the hash tables
     // -------------------------------------------------------------------------
@@ -93,23 +93,26 @@ void MQH<DType>::build_quantization_tables() {
 }
 
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 
 void MQH<DType>::build_hash_tables() {
     // TODO: implement build_hash_tables
 }
+// -----------------------------------------------------------------------------
 
 template<class DType>
-void MQH<DType>::coarse_quantization(std::vector<DType> &data, int n, int d) {
+void MQH<DType>::coarse_quantization(const DType *data, int n, int d) {
     int first_dims = d/2;
     int second_dims = d/2;
     if(d % 2 != 0) {
         first_dims++;
     }
-
     
-    std::vector<DTYPE> firsthalf(first_dims*d);
-    std::vector<DTYPE> secondhalf(second_dims*d);
-    for(int i = 0; i++ < n; i++)
+    // OOOOOOBS remember to delete and set pointers to null when finished!
+    std::vector<DTYPE> *firsthalf = new std::vector<DType>(n * first_dims);
+    std::vector<DTYPE> *secondhalf = new std::vector<DType>(n * second_dims);
+    for(int i = 0; i < n; i++)
     {
         for(int j = 0; j < firstdims; j++)
         {
@@ -121,6 +124,15 @@ void MQH<DType>::coarse_quantization(std::vector<DType> &data, int n, int d) {
         }
     }
 
+    int k = number_of_centroids;
+    int iterations = 30;
+
+    std::vector<DType> centroids1(number_of_centroids * first_dims);
+    std::vector<DType> centroids2(number_of_centroids * second_dims);
+    kmeans(firsthalf, k, n, first_dims, sample_size, iterations, centroids1);
+    kmeans(secondhalf, k, n, second_dims, sample_size, iterations, centroids2);
+
+    assign_points( )
 
 
 
